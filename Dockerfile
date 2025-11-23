@@ -2,8 +2,8 @@ FROM eclipse-temurin:17-jdk
 
 WORKDIR /app
 
-# Copia libs externas (se houver) e código fonte
-COPY lib/ ./lib/
+# Cria diretório para libs (se quiser adicionar jars em lib/ no futuro)
+RUN mkdir -p lib
 COPY src/ ./src/
 
 # Compila todos os .java encontrados para a pasta out
