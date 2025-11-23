@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel System - Gestão Completa</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        body { background-color: #f0f2f5; }
+        .card { border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .nav-tabs .nav-link.active { font-weight: bold; border-bottom: 3px solid #0d6efd; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-primary mb-4">
+    <div class="container">
+        <span class="navbar-brand mb-0 h1">🏨 Sistema Hoteleiro Pro</span>
+    </div>
+</nav>
+
+<div class="container">
+    <!-- Navegação por Abas -->
+    <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="hospedes-tab" data-bs-toggle="tab" data-bs-target="#hospedes-pane" type="button">🧑‍ Hóspedes</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="quartos-tab" data-bs-toggle="tab" data-bs-target="#quartos-pane" type="button">🛏️ Quartos</button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="myTabContent">
+        
+        <!-- ABA HÓSPEDES -->
+        <div class="tab-pane fade show active" id="hospedes-pane">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card p-3">
+                        <h5>Novo Hóspede</h5>
+                        <form id="formHospede">
+                            <div class="mb-2"><label>Nome</label><input type="text" id="nome" class="form-control" required></div>
+                            <div class="mb-2"><label>CPF</label><input type="text" id="cpf" class="form-control" required></div>
+                            <div class="mb-2"><label>Email</label><input type="email" id="email" class="form-control"></div>
+                            <div class="mb-3"><label>Telefone</label><input type="text" id="telefone" class="form-control"></div>
+                            <button type="submit" class="btn btn-primary w-100">Cadastrar</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div class="card p-3">
+                        <h5>Lista de Hóspedes</h5>
+                        <table class="table table-sm">
+                            <thead><tr><th>Nome</th><th>CPF</th><th>Email</th></tr></thead>
+                            <tbody id="tbHospedes"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA QUARTOS -->
+        <div class="tab-pane fade" id="quartos-pane">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card p-3">
+                        <h5>Novo Quarto</h5>
+                        <form id="formQuarto">
+                            <div class="mb-2"><label>Número</label><input type="number" id="qNumero" class="form-control" required></div>
+                            <div class="mb-2">
+                                <label>Tipo</label>
+                                <select id="qTipo" class="form-select">
+                                    <option value="Standard">Standard</option>
+                                    <option value="Luxo">Luxo</option>
+                                    <option value="Suite">Suíte Master</option>
+                                </select>
+                            </div>
+                            <div class="row">
+                                <div class="col mb-2"><label>Adultos</label><input type="number" id="qAdultos" class="form-control" value="2"></div>
+                                <div class="col mb-2"><label>Crianças</label><input type="number" id="qCriancas" class="form-control" value="0"></div>
+                            </div>
+                            <div class="mb-3"><label>Preço Diária (R$)</label><input type="number" id="qPreco" step="0.01" class="form-control" required></div>
+                            <button type="submit" class="btn btn-success w-100">Salvar Quarto</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div class="card p-3">
+                        <h5>Quartos Disponíveis</h5>
+                        <table class="table table-sm">
+                            <thead><tr><th>Nº</th><th>Tipo</th><th>Capacidade</th><th>Preço</th></tr></thead>
+                            <tbody id="tbQuartos"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- LÓGICA HÓSPEDES ---
+    document.getElementById('formHospede').addEventListener('submit', e => {
+        e.preventDefault();
+        const dados = `${document.getElementById('nome').value}|${document.getElementById('cpf').value}|${document.getElementById('email').value}|${document.getElementById('telefone').value}`;
+        enviar('/api/hospedes', dados, carregarHospedes);
+    });
+
+    function carregarHospedes() {
+        fetch('/api/hospedes').then(r => r.json()).then(data => {
+            document.getElementById('tbHospedes').innerHTML = data.map(h => 
+                `<tr><td>${h.nome}</td><td>${h.cpf}</td><td>${h.email}</td></tr>`
+            ).join('');
+        });
+    }
+
+    // --- LÓGICA QUARTOS ---
+    document.getElementById('formQuarto').addEventListener('submit', e => {
+        e.preventDefault();
+        const dados = `${document.getElementById('qNumero').value}|${document.getElementById('qTipo').value}|${document.getElementById('qAdultos').value}|${document.getElementById('qCriancas').value}|${document.getElementById('qPreco').value}`;
+        enviar('/api/quartos', dados, carregarQuartos);
+    });
+
+    function carregarQuartos() {
+        fetch('/api/quartos').then(r => r.json()).then(data => {
+            document.getElementById('tbQuartos').innerHTML = data.map(q => 
+                `<tr><td>${q.numero}</td><td>${q.tipo}</td><td>${q.adultos} Ad / ${q.criancas} Cr</td><td>R$ ${q.preco}</td></tr>`
+            ).join('');
+        });
+    }
+
+    // --- UTILITÁRIOS ---
+    function enviar(url, corpo, callback) {
+        fetch(url, { method: 'POST', body: corpo })
+        .then(async res => {
+            if(res.ok) { alert('Salvo com sucesso!'); callback(); }
+            else alert('Erro: ' + await res.text());
+        });
+    }
+
+    // Inicialização
+    carregarHospedes();
+    carregarQuartos();
+</script>
+</body>
+</html>
