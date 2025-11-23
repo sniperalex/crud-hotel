@@ -7,14 +7,58 @@ import java.sql.Statement;
 
 public class ConexaoFactory {
 
-    private static final String URL = "jdbc:sqlite:hotel_db.sqlite";
+    // Se quiser usar um serviço como Turso (libsql), defina as variáveis de ambiente:
+    // - LIBSQL_URL (libsql://crud-sniperalex.aws-us-west-2.turso.io)
+    // - LIBSQL_TOKEN (eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NjM5MzYwNDgsImlkIjoiYmRlOTdmZWYtZDk4Yi00OWUzLTkwNmYtNWI3N2MzM2FiOGNmIiwicmlkIjoiMTNjZGJlMDYtZTA1Yi00YTA0LWFmY2QtZGNjMTkwMDkyMDQ4In0.Biq2bhke5KAJnjZw97VDQbd9IqYUXGWBHeuGnGJMGI8QrBYJ9wcNG2dLVGVAdXUyne3IoJyBrbamErhM6gbGCA)
+    // Caso contrário, o fallback é usar SQLite local via SQLITE_PATH
+
+    private static final String DEFAULT_SQLITE_PATH = "hotel_db.sqlite";
 
     public static Connection getConnection() {
         try {
+            // 1) Verifica se há libsql (Turso) configurado
+            String libsqlUrl = System.getenv("LIBSQL_URL");
+            if (libsqlUrl != null && !libsqlUrl.isBlank()) {
+                // Converte libsql://host... para jdbc:libsql://host...
+                String jdbcUrl = libsqlUrl.startsWith("jdbc:") ? libsqlUrl : libsqlUrl.replaceFirst("^libsql:", "jdbc:libsql:");
+
+                // Opcional: se for necessário carregar driver específico, informe via LIBSQL_DRIVER
+                String libDriver = System.getenv("LIBSQL_DRIVER");
+                if (libDriver != null && !libDriver.isBlank()) {
+                    Class.forName(libDriver);
+                }
+
+                java.util.Properties props = new java.util.Properties();
+                String token = System.getenv("LIBSQL_TOKEN");
+                if (token != null && !token.isBlank()) {
+                    // A chave exata esperada pelo driver pode variar; muitos drivers aceitam uma propriedade 'authToken' ou específica.
+                    // Para o driver libsql use a propriedade apropriada (ex.: 'libsql.token' ou 'authToken') conforme a documentação do driver.
+                    props.setProperty("authToken", token);
+                }
+
+                return DriverManager.getConnection(jdbcUrl, props);
+            }
+
+            // 2) Fallback: usa SQLite local (arquivo). Path pode ser configurado via SQLITE_PATH
+            String dbPath = System.getenv().getOrDefault("SQLITE_PATH", DEFAULT_SQLITE_PATH);
+            String url = "jdbc:sqlite:" + dbPath;
+
+            // Carrega driver SQLite (Xerial)
             Class.forName("org.sqlite.JDBC");
-            return DriverManager.getConnection(URL);
+            Connection conn = DriverManager.getConnection(url);
+
+            // Melhora concorrência local com WAL
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("PRAGMA journal_mode = WAL;");
+                stmt.execute("PRAGMA synchronous = NORMAL;");
+            } catch (SQLException ex) {
+                // não impede a conexão, apenas loga
+                ex.printStackTrace();
+            }
+
+            return conn;
         } catch (ClassNotFoundException | SQLException e) {
-            throw new RuntimeException("Erro ao conectar no SQLite: " + e.getMessage());
+            throw new RuntimeException("Erro ao conectar no banco: " + e.getMessage(), e);
         }
     }
 

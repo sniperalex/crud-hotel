@@ -22,3 +22,4 @@ out/
 
 # Dependencies (if you add libs to lib/)
 lib/
+.env
