@@ -1,0 +1,10 @@
+.git
+.target
+out
+*.class
+*.sqlite
+*.sqlite3
+*.log
+lib/
+node_modules/
+.DS_Store
